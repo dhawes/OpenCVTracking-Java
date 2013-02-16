@@ -41,6 +41,7 @@ import static com.googlecode.javacv.cpp.opencv_imgproc.cvThreshold;
  * @author Administrator
  */
 public class OpenCVTest {
+    private final static double TAN = Math.tan((double)20 * (Math.PI / (double)180));
 
     /**
      * @param args the command line arguments
@@ -52,17 +53,6 @@ public class OpenCVTest {
         CanvasFrame masked = new CanvasFrame("Masked", CV_WINDOW_AUTOSIZE);
         canvas.setDefaultCloseOperation(javax.swing.JFrame.EXIT_ON_CLOSE);
         masked.setDefaultCloseOperation(javax.swing.JFrame.EXIT_ON_CLOSE);
-
-        
-        // Frame grabber
-        /*
-        OpenCVFrameGrabber grabber = new OpenCVFrameGrabber(0);
-        grabber.setImageHeight(240);
-        grabber.setImageWidth(320);
-        //grabber.setImageWidth(640);
-        //grabber.setImageHeight(480);
-        grabber.start();
-        */
         
         // CvCapture
         ///*
@@ -78,25 +68,16 @@ public class OpenCVTest {
         {
             System.out.println("Retrieving image...");
             //capture = cvCreateFileCapture("http://128.173.201.214/jpg/image.jpg");
-            //IplImage img = grabber.grab();
             IplImage img = cvQueryFrame(capture);
-
-            if(img == null) return;
-            System.out.println("done.");
-            canvas.setCanvasSize(img.width(), img.height());
-            System.out.println("width = " + img.width() + ", height = " + img.height());
-            //canvas.showImage(img);
-            //Thread.sleep(5000);
-            //canvas.dispose();
-            //cvReleaseImage(img);
-            //}
-            //grabber.stop();
-
+            
             //IplImage img = cvLoadImage(
-             //   "C:\\WindRiver\\workspace\\VisionSample2013\\VisionImages\\First Choice Green Images\\HybridLine_SmallGreen2.jpg");
+                //"/home/dhawes/NetBeansProjects/Sample/VisionImages/Other Images/FullField_DoubleGreenBK3.jpg");
                 //"C:\\WindRiver\\workspace\\VisionSample2013\\VisionImages\\First Choice Green Images\\Midfield_SmallGreen2.jpg");
 
+
             if(img == null) return;
+            canvas.setCanvasSize(img.width(), img.height());
+            System.out.println("\twidth = " + img.width() + ", height = " + img.height());
 
             CvSize size = cvSize(img.width(),img.height());
             IplImage bin = IplImage.create(size, 8, 1);
@@ -106,20 +87,9 @@ public class OpenCVTest {
             IplImage val = IplImage.create(size, 8, 1);
 
             canvas.setCanvasSize(img.width(), img.height());
-            //canvas.showImage(img);
-
-            //Thread.sleep(3000);
 
             cvCvtColor(img, hsv, CV_BGR2HSV);
             cvSplit(hsv, hue, sat, val, null);
-
-            // red
-            /*
-            cvThreshold(hue, bin, 60-15, 255, CV_THRESH_BINARY);
-            cvThreshold(hue, hue, 60+15, 255, CV_THRESH_BINARY_INV);
-            cvThreshold(sat, sat, 200, 255, CV_THRESH_BINARY);
-            cvThreshold(val, val, 55, 255, CV_THRESH_BINARY);
-            */
 
             // green
             cvThreshold(hue, bin, 60, 100, CV_THRESH_BINARY);
@@ -130,17 +100,8 @@ public class OpenCVTest {
             cvAnd(bin, sat, bin, null);
             cvAnd(bin, val, bin, null);
 
-            //canvas.showImage(bin);
-            //Thread.sleep(3000);
-
             IplConvKernel morphKernel = IplConvKernel.create(3, 3, 1, 1, CV_SHAPE_RECT, null);
             cvMorphologyEx(bin, bin, null, morphKernel, CV_MOP_CLOSE, 2);
-
-            //cvInRangeS(hsv, CvScalar(60, 200, 55), CvScalar(255, 255, 255), bin);
-            //cvInRange(hsv, CvArr(60, 200, 55), CvArr(255, 255, 255), bin);
-
-            //canvas.showImage(bin);
-            //Thread.sleep(3000);
 
             IplImage tempImage = IplImage.create(bin.cvSize(), bin.depth(), 1);
             cvCopy(bin, tempImage);
@@ -155,10 +116,7 @@ public class OpenCVTest {
             {
                 CvSeq convexContour = cvConvexHull2(contours, storage, CV_CLOCKWISE, 1);
                 cvDrawContours(tempImage, convexContour, CvScalar.WHITE, CvScalar.WHITE, -1, CV_FILLED, 8);
-                //canvas.showImage(tempImage);
-                //Thread.sleep(500);
                 contours = contours.h_next();
-                System.out.println("1st contour");
             }
             
             masked.showImage(tempImage);
@@ -177,7 +135,7 @@ public class OpenCVTest {
                    cvCheckContourConvexity(result) != 0 &&
                    boundingRect.width() != boundingRect.height())
                 {
-                    System.out.println("Looks like a rect.");
+                    System.out.println("\tLooks like a rect.");
                     CvPoint[] pt = new CvPoint[4];
                     for(int i = 0; i < 4; i++)
                     {
@@ -191,23 +149,50 @@ public class OpenCVTest {
                     cvCircle(img, cvPoint(boundingRect.x() + boundingRect.width() / 2,
                            boundingRect.y() + boundingRect.height() / 2), 2, 
                            cvScalar(0, 255, 255, 0), 2, 8, 0);
-                }
-                contours = contours.h_next();
-                System.out.println("2nd contour");
+                    
+                    double targetRatio = (double)boundingRect.width() / (double)boundingRect.height();  
+                    System.out.println("\t\twidth = " + boundingRect.width());
+                    System.out.println("\t\theight = " + boundingRect.height());
+                    System.out.println("\t\ttargetRatio = " + targetRatio);
+                    if(targetRatio > 2.5)
+                    {
+                        // top goal
+                        System.out.println("\t\tTop goal.");
+                        cvCircle(img, cvPoint(boundingRect.x() + boundingRect.width() / 2,
+                           boundingRect.y() + boundingRect.height() / 2), 2, 
+                           cvScalar(0, 0, 255, 0), 2, 8, 0);
+                        double fov = (double)20 * (double)img.height() / (double)boundingRect.height();
+                        double d = ((double)fov / (double)2) / TAN;
+                        System.out.println("\t\tfov = " + fov);
+                        System.out.println("\t\tdistance = " + d);
 
+                    }
+                    else
+                    {
+                        // middle goal
+                        System.out.println("\t\tMiddle goal.");
+                        double fov = (double)29 * (double)img.height() / (double)boundingRect.height();
+                        double d = ((double)fov / (double)2) / TAN;
+                        System.out.println("\t\tfov = " + fov);
+                        System.out.println("\t\tdistance = " + d);
+                    }
+                }
+                
+                contours = contours.h_next();
             }
 
             canvas.showImage(img);
-            //Thread.sleep(10000);
             
             /*
             int k = cvWaitKey(0);
             System.out.println(k);
             if(k == 27) break;
             */
+            System.out.println("done.");
         }
 
         //canvas.dispose();
+        //masked.dispose();
     }
 }
 
