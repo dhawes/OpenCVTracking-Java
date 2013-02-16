@@ -68,8 +68,10 @@ public class OpenCVTest {
         ///*
         //CvCapture capture = cvCreateFileCapture("http://128.173.201.214/jpg/image.jpg");
         CvCapture capture = cvCreateCameraCapture(0);
-        cvSetCaptureProperty(capture, CV_CAP_PROP_FRAME_WIDTH, 640);
-        cvSetCaptureProperty(capture, CV_CAP_PROP_FRAME_HEIGHT, 480);
+        //cvSetCaptureProperty(capture, CV_CAP_PROP_FRAME_WIDTH, 640);
+        //cvSetCaptureProperty(capture, CV_CAP_PROP_FRAME_HEIGHT, 480);
+        cvSetCaptureProperty(capture, CV_CAP_PROP_FRAME_WIDTH, 320);
+        cvSetCaptureProperty(capture, CV_CAP_PROP_FRAME_HEIGHT, 240);
         //*/  
       
         while(true)
@@ -167,8 +169,7 @@ public class OpenCVTest {
 
             while(contours != null && !contours.isNull())
             {
-                CvSeq convexContour = cvConvexHull2(contours, storage, CV_CLOCKWISE, 1);
-                CvSeq result = cvApproxPoly(convexContour, 256, storage, CV_POLY_APPROX_DP, 10, 0);
+                CvSeq result = cvApproxPoly(contours, 256, storage, CV_POLY_APPROX_DP, 10, 0);
                 CvRect boundingRect = cvBoundingRect(result, 0);
                 
                 if(result.total() == 4 &&
